@@ -8,30 +8,34 @@ export async function GET() {
     });
 
     interface Task {
-        id: string;
-        name: string;
-        description: string;
+      id: string;
+      title: string;
+      done: boolean;
+      projectId: string | null;
     }
 
     interface ProjectRaw {
-        id: string | number;
-        name: string;
-        description: string;
-        tasks: Task[];
+      id: string;
+      name: string;
+      description: string;
+      createdAt: Date;
+      tasks: Task[];
     }
 
     interface Project {
-        id: string;
-        name: string;
-        description: string;
-        tasks: Task[];
+      id: string;
+      name: string;
+      description: string;
+      createdAt: Date;
+      tasks: Task[];
     }
 
-    const projects: Project[] = (projectsRaw as ProjectRaw[]).map((p: ProjectRaw): Project => ({
-        id: p.id.toString(),
-        name: p.name,
-        description: p.description,
-        tasks: p.tasks,
+    const projects: Project[] = projectsRaw.map((p: ProjectRaw): Project => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      createdAt: p.createdAt,
+      tasks: p.tasks,
     }));
 
     console.log('[GET /api/projects] Projects:', projects);

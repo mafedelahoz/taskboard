@@ -1,18 +1,99 @@
-type Props = {
+'use client';
+
+import { useEffect, useState } from 'react';
+
+interface Task {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  tasks: Task[];
+}
+
+export default function ProjectDetails({ 
+  params 
+}: { 
   params: { id: string }
-};
+}) {
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export default async function ProjectDetails({ params }: Props) {
-  const id = params.id;
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/projects/${id}`, {
-    cache: 'no-store'
-  });
+  useEffect(() => {
+    const fetchProject = async () => {
+      try {
+        const res = await fetch(`/api/projects/${params.id}`, {
+          cache: 'no-store',
+        });
 
-  if (!res.ok) {
-    throw new Error('Failed to fetch project');
+        if (!res.ok) {
+          throw new Error('Failed to fetch project');
+        }
+
+        const data = await res.json();
+        setProject(data);
+      } catch (error) {
+        console.error('Error fetching project:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProject();
+  }, [params.id]);
+
+  const toggleTaskStatus = async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to update task');
+      }
+
+      // Refresh the project data
+      const updatedRes = await fetch(`/api/projects/${params.id}`, {
+        cache: 'no-store',
+      });
+      
+      if (updatedRes.ok) {
+        const updatedProject = await updatedRes.json();
+        setProject(updatedProject);
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+      alert('Failed to update task status');
+    }
+  };
+
+  if (loading) {
+    return (
+      <main style={{ 
+        maxWidth: '900px', 
+        margin: '3rem auto',
+        textAlign: 'center' 
+      }}>
+        Loading...
+      </main>
+    );
   }
 
-  const project = await res.json();
+  if (!project) {
+    return (
+      <main style={{ 
+        maxWidth: '900px', 
+        margin: '3rem auto',
+        textAlign: 'center' 
+      }}>
+        Project not found
+      </main>
+    );
+  }
 
   return (
     <main
@@ -61,7 +142,7 @@ export default async function ProjectDetails({ params }: Props) {
         >
           <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#222' }}>Tasks</h2>
           <a
-            href={`/projects/${id}/tasks/new`}
+            href={`/projects/${params.id}/tasks/new`}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -77,7 +158,9 @@ export default async function ProjectDetails({ params }: Props) {
               transition: 'background 0.2s',
             }}
           >
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeWidth="2" d="M12 5v14m7-7H5"/></svg>
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" strokeWidth="2" d="M12 5v14m7-7H5"/>
+            </svg>
             Add Task
           </a>
         </div>
@@ -107,9 +190,10 @@ export default async function ProjectDetails({ params }: Props) {
               No tasks yet.
             </div>
           ) : (
-            project.tasks.map((task: { id: string; title: string; isCompleted: boolean }) => (
+            project.tasks.map((task: Task) => (
               <div
                 key={task.id}
+                onClick={() => toggleTaskStatus(task.id)}
                 style={{
                   background: '#fafbfc',
                   borderRadius: '12px',
@@ -118,7 +202,7 @@ export default async function ProjectDetails({ params }: Props) {
                   minWidth: '260px',
                   maxWidth: '320px',
                   flex: '1 1 260px',
-                  borderTop: task.isCompleted ? '5px solid #38b000' : '5px solid #0079bf',
+                  borderTop: task.done ? '5px solid #38b000' : '5px solid #0079bf',
                   position: 'relative',
                   transition: 'box-shadow 0.2s, transform 0.2s',
                   cursor: 'pointer',
@@ -142,8 +226,8 @@ export default async function ProjectDetails({ params }: Props) {
                       height: '16px',
                       borderRadius: '50%',
                       border: '2px solid',
-                      background: task.isCompleted ? '#38b000' : '#0079bf',
-                      borderColor: task.isCompleted ? '#38b000' : '#0079bf',
+                      background: task.done ? '#38b000' : '#0079bf',
+                      borderColor: task.done ? '#38b000' : '#0079bf',
                       display: 'inline-block',
                     }}
                   ></span>
@@ -151,8 +235,8 @@ export default async function ProjectDetails({ params }: Props) {
                     style={{
                       fontSize: '1.15rem',
                       fontWeight: 600,
-                      color: task.isCompleted ? '#a0aec0' : '#22223b',
-                      textDecoration: task.isCompleted ? 'line-through' : 'none',
+                      color: task.done ? '#a0aec0' : '#22223b',
+                      textDecoration: task.done ? 'line-through' : 'none',
                       transition: 'color 0.2s',
                       wordBreak: 'break-word',
                     }}
@@ -160,7 +244,7 @@ export default async function ProjectDetails({ params }: Props) {
                     {task.title}
                   </span>
                 </div>
-                {task.isCompleted && (
+                {task.done && (
                   <span
                     style={{
                       position: 'absolute',

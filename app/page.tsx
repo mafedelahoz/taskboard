@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 type Task = {
   id: string
@@ -13,11 +16,53 @@ type Project = {
   tasks: Task[]
 }
 
-export default async function Home() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/projects`, {
-    cache: 'no-store',
-  })
-  const projects: Project[] = await res.json()
+export default function Home() {
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchProjects()
+  }, [])
+
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch('/api/projects', {
+        cache: 'no-store',
+      })
+      const data = await res.json()
+      setProjects(data)
+    } catch (error) {
+      console.error('Error fetching projects:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleTaskStatus = async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to update task')
+      }
+
+      // Refresh projects to show updated task status
+      fetchProjects()
+    } catch (error) {
+      console.error('Error updating task:', error)
+      alert('Failed to update task status')
+    }
+  }
+
+  if (loading) {
+    return (
+      <main style={{ padding: '20px', textAlign: 'center', color: 'white' }}>
+        Loading...
+      </main>
+    )
+  }
 
   return (
     <>
@@ -100,6 +145,8 @@ export default async function Home() {
           flex-grow: 1;
           overflow-y: auto;
           padding: 0 8px 8px;
+          list-style: none;
+          margin: 0;
         }
         .task {
           background: white;
@@ -110,14 +157,39 @@ export default async function Home() {
           cursor: pointer;
           font-size: 0.875rem;
           color: #172b4d;
-          transition: background-color 0.2s ease;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
         .task:hover {
           background-color: #f4f5f7;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgb(9 30 66 / 25%);
         }
         .task.done {
           color: #a5adba;
           text-decoration: line-through;
+        }
+        .task-checkbox {
+          width: 16px;
+          height: 16px;
+          border-radius: 3px;
+          border: 2px solid #dfe1e6;
+          display: inline-block;
+          position: relative;
+        }
+        .task.done .task-checkbox {
+          background: #0079bf;
+          border-color: #0079bf;
+        }
+        .task.done .task-checkbox:after {
+          content: '✓';
+          color: white;
+          position: absolute;
+          top: -2px;
+          left: 2px;
+          font-size: 12px;
         }
 
         /* Footer con link */
@@ -130,6 +202,9 @@ export default async function Home() {
           color: #0052cc;
           text-decoration: none;
           font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 4px;
         }
         .column-footer a:hover {
           text-decoration: underline;
@@ -151,7 +226,6 @@ export default async function Home() {
           <Link href="/projects/new" className="new-project-btn">
             + New Project
           </Link>
-
         </header>
 
         {projects.length === 0 ? (
@@ -164,7 +238,7 @@ export default async function Home() {
                 <div className="column-desc">{project.description}</div>
                 <ul className="tasks-list">
                   {project.tasks.length === 0 ? (
-                    <li style={{ color: '#8993a4', fontStyle: 'italic' }}>
+                    <li style={{ color: '#8993a4', fontStyle: 'italic', padding: '8px 12px' }}>
                       No tasks available
                     </li>
                   ) : (
@@ -172,15 +246,17 @@ export default async function Home() {
                       <li
                         key={task.id}
                         className={`task ${task.done ? 'done' : ''}`}
+                        onClick={() => toggleTaskStatus(task.id)}
                       >
-                        {task.title}
+                        <span className="task-checkbox" />
+                        <span>{task.title}</span>
                       </li>
                     ))
                   )}
                 </ul>
                 <footer className="column-footer">
                   <Link href={`/projects/${project.id}/tasks/new`}>
-                    ➕ New task
+                    <span>➕</span> New task
                   </Link>
                 </footer>
               </section>
