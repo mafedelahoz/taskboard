@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 
 interface Task {
@@ -20,22 +20,17 @@ interface Project {
   tasks: Task[];
 }
 
-type PageProps = {
-  params: {
-    id: string;
-  };
-  searchParams: { [key: string]: string | string[] | undefined };
-}
-
-export default function ProjectDetails({ params }: PageProps) {
+export default function ProjectDetails() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const { status } = useSession();
   const router = useRouter();
+  const params = useParams();
+  const projectId = params?.id as string;
 
   const fetchProject = async () => {
     try {
-      const res = await fetch(`/api/projects/${params.id}`, {
+      const res = await fetch(`/api/projects/${projectId}`, {
         cache: 'no-store',
       });
 
@@ -213,7 +208,7 @@ export default function ProjectDetails({ params }: PageProps) {
             Tasks
           </h2>
           <Link
-            href={`/projects/${params.id}/tasks/new`}
+            href={`/projects/${projectId}/tasks/new`}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
