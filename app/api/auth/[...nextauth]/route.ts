@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { AuthOptions } from "next-auth";
 import { compare } from "bcrypt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "../../../../lib/prisma";
@@ -9,7 +9,7 @@ if (!process.env.NEXTAUTH_SECRET) {
 
 const DEMO_USER_ID = '65f3f3f3f3f3f3f3f3f3f3f3';
 
-const handler = NextAuth({
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -59,6 +59,35 @@ const handler = NextAuth({
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, 
   },
+  cookies: {
+    sessionToken: {
+      name: `__Secure-next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true
+      }
+    },
+    callbackUrl: {
+      name: `__Secure-next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true
+      }
+    },
+    csrfToken: {
+      name: `__Host-next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true
+      }
+    }
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -76,6 +105,8 @@ const handler = NextAuth({
     },
   },
   debug: process.env.NODE_ENV === 'development',
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST }; 
