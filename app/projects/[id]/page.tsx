@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 
 interface Task {
@@ -20,27 +20,17 @@ interface Project {
   tasks: Task[];
 }
 
-export default function ProjectDetails({ 
-  params 
-}: { 
-  params: { id: string }
-}) {
+export default function ProjectDetails() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const { status } = useSession();
   const router = useRouter();
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-    } else if (status === 'authenticated') {
-      fetchProject();
-    }
-  }, [status]);
+  const params = useParams();
+  const projectId = params?.id as string;
 
   const fetchProject = async () => {
     try {
-      const res = await fetch(`/api/projects/${params.id}`, {
+      const res = await fetch(`/api/projects/${projectId}`, {
         cache: 'no-store',
       });
 
@@ -56,6 +46,14 @@ export default function ProjectDetails({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+    } else if (status === 'authenticated') {
+      fetchProject();
+    }
+  }, [status, router, fetchProject]);
 
   const toggleTaskStatus = async (taskId: string) => {
     if (!project) return;
@@ -210,7 +208,7 @@ export default function ProjectDetails({
             Tasks
           </h2>
           <Link
-            href={`/projects/${params.id}/tasks/new`}
+            href={`/projects/${projectId}/tasks/new`}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
