@@ -3,21 +3,6 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 
-interface Task {
-  id: string;
-  title: string;
-  done: boolean;
-  projectId: string | null;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  createdAt: Date;
-  tasks: Task[];
-}
-
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);

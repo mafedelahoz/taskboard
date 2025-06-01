@@ -31,7 +31,7 @@ export default function SignIn() {
 
       router.push('/');
       router.refresh();
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
@@ -56,7 +56,7 @@ export default function SignIn() {
 
       router.push('/');
       router.refresh();
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
@@ -355,7 +355,7 @@ export default function SignIn() {
         </button>
 
         <div className="register-text">
-          Don't have an account?
+          Don&apos;t have an account?
           <Link href="/auth/register" className="register-link">
             Sign up
           </Link>

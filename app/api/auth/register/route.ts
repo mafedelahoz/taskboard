@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { hash } from 'bcrypt';
-import { prisma } from '../../../../lib/prisma';
-import { signIn } from 'next-auth/react';
+import { hash } from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
@@ -40,7 +39,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const hashedPassword = await hash(password, 10);
+    const hashedPassword = await hash(password, 12);
     const user = await prisma.user.create({
       data: {
         email,
@@ -48,12 +47,13 @@ export async function POST(req: Request) {
       },
     });
 
-    const { password: _, ...userWithoutPassword } = user;
-
     return NextResponse.json(
       { 
         message: 'Account created successfully',
-        user: userWithoutPassword 
+        user: {
+          email: user.email,
+          id: user.id
+        }
       }, 
       { status: 201 }
     );
