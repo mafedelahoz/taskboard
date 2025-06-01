@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 
 
@@ -25,15 +25,7 @@ export default function NewTask() {
   const [error, setError] = useState<string | null>(null);
   const { status } = useSession();
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-    } else if (status === 'authenticated') {
-      fetchProject();
-    }
-  }, [status]);
-
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     try {
       const id = Array.isArray(params.id) ? params.id[0] : params.id;
       if (!id) throw new Error('Project ID not found');
@@ -49,7 +41,15 @@ export default function NewTask() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+    } else if (status === 'authenticated') {
+      fetchProject();
+    }
+  }, [status, router, fetchProject]);
 
   const onSubmit = async (data: TaskFormData) => {
     try {

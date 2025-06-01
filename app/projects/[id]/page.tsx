@@ -20,7 +20,7 @@ interface Project {
   tasks: Task[];
 }
 
-interface PageProps {
+type PageProps = {
   params: {
     id: string;
   };
@@ -32,14 +32,6 @@ export default function ProjectDetails({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const { status } = useSession();
   const router = useRouter();
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-    } else if (status === 'authenticated') {
-      fetchProject();
-    }
-  }, [status]);
 
   const fetchProject = async () => {
     try {
@@ -59,6 +51,14 @@ export default function ProjectDetails({ params }: PageProps) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+    } else if (status === 'authenticated') {
+      fetchProject();
+    }
+  }, [status, router, fetchProject]);
 
   const toggleTaskStatus = async (taskId: string) => {
     if (!project) return;
