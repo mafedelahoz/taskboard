@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TaskBoard - Project Management Tool
 
-## Getting Started
+A minimal project management application built with Next.js, featuring real-time task management and a modern UI.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Create and manage projects
+- Add and track tasks
+- Secure authentication
+- Fully responsive design
+- Optimistic UI updates
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Frontend**: Next.js 13 (App Router), React, TailwindCSS
+- **Backend**: Next.js API Routes
+- **Database**: MongoDB with Prisma ORM
+- **Authentication**: NextAuth.js
+- **Forms**: React Hook Form
+- **Deployment**: Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup Instructions
 
-## Learn More
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/mafedelahoz/taskboard
+   cd taskboard
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Environment Setup**
+   - Copy `.env.example` to `.env`
+   ```bash
+   cp .env.example .env
+   ```
+   - Fill in the required environment variables:
+     ```
+     DATABASE_URL=""
+     NEXTAUTH_SECRET=""
+     NEXTAUTH_URL=""
+     ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. **Database Setup**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
 
-## Deploy on Vercel
+5. **Run the development server**
+   ```bash
+   npm run dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+6. Open "" in your browser
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Architectural Decisions
+
+### 1. App Router & Server Components
+- Utilized Next.js 13 App Router for improved performance and better SEO
+- Strategic use of Server and Client Components to optimize rendering
+- Server Components for static layouts and Client Components for interactive elements
+
+### 2. Authentication Strategy
+- Implemented NextAuth.js for secure, session-based authentication
+- Protected routes and API endpoints
+- Seamless authentication flow with minimal friction
+
+### 3. Data Management
+- MongoDB for flexible schema and scalability
+- Prisma ORM for type-safe database operations
+- Optimistic updates for better user experience
+
+### 4. UI/UX Decisions
+- Clean, minimalist design for better focus
+- Responsive layout with mobile-first approach
+- Smooth transitions and loading states
+- Consistent visual language across the application
+
+## Future Improvements
+
+Given more time, these are the areas I would focus on improving:
+
+### 1. Enhanced Features
+- Drag and drop task reordering
+- Rich text editor for task descriptions
+- Task due dates and priorities
+- Project categories and tags
+- Task comments and attachments
+
+### 2. Performance Optimizations
+- Implement data caching
+- Add pagination for large projects
+- Optimize image loading and assets
+- Add service worker for offline support
+
+### 3. Developer Experience
+- Add comprehensive test coverage
+- Add detailed API documentation
+
+### 4. User Experience
+- Add keyboard shortcuts
+- Implement dark mode
