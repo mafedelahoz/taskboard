@@ -1,17 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface Task {
   id: string;
   title: string;
-  done: boolean;
+  isCompleted: boolean;
+  createdAt: string;
 }
 
 interface Project {
   id: string;
   name: string;
   description: string;
+  createdAt: string;
   tasks: Task[];
 }
 
@@ -22,31 +27,50 @@ export default function ProjectDetails({
 }) {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const { status } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        const res = await fetch(`/api/projects/${params.id}`, {
-          cache: 'no-store',
-        });
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+    } else if (status === 'authenticated') {
+      fetchProject();
+    }
+  }, [status]);
 
-        if (!res.ok) {
-          throw new Error('Failed to fetch project');
-        }
+  const fetchProject = async () => {
+    try {
+      const res = await fetch(`/api/projects/${params.id}`, {
+        cache: 'no-store',
+      });
 
-        const data = await res.json();
-        setProject(data);
-      } catch (error) {
-        console.error('Error fetching project:', error);
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error('Failed to fetch project');
       }
-    };
 
-    fetchProject();
-  }, [params.id]);
+      const data = await res.json();
+      setProject(data);
+    } catch (error) {
+      console.error('Error fetching project:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleTaskStatus = async (taskId: string) => {
+    if (!project) return;
+
+    const currentProject = { ...project };
+
+    setProject({
+      ...currentProject,
+      tasks: currentProject.tasks.map(task =>
+        task.id === taskId
+          ? { ...task, isCompleted: !task.isCompleted }
+          : task
+      )
+    } as Project);
+
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
@@ -54,16 +78,14 @@ export default function ProjectDetails({
 
       if (!res.ok) {
         throw new Error('Failed to update task');
-      }
-
-      // Refresh the project data
-      const updatedRes = await fetch(`/api/projects/${params.id}`, {
-        cache: 'no-store',
-      });
-      
-      if (updatedRes.ok) {
-        const updatedProject = await updatedRes.json();
-        setProject(updatedProject);
+        setProject({
+          ...currentProject,
+          tasks: currentProject.tasks.map(task =>
+            task.id === taskId
+              ? { ...task, isCompleted: !task.isCompleted }
+              : task
+          )
+        } as Project);
       }
     } catch (error) {
       console.error('Error updating task:', error);
@@ -71,16 +93,21 @@ export default function ProjectDetails({
     }
   };
 
-  if (loading) {
+  if (status === 'loading' || loading) {
     return (
       <main style={{ 
         maxWidth: '900px', 
         margin: '3rem auto',
-        textAlign: 'center' 
+        textAlign: 'center',
+        color: '#fff'
       }}>
         Loading...
       </main>
     );
+  }
+
+  if (status === 'unauthenticated') {
+    return null; 
   }
 
   if (!project) {
@@ -88,9 +115,21 @@ export default function ProjectDetails({
       <main style={{ 
         maxWidth: '900px', 
         margin: '3rem auto',
-        textAlign: 'center' 
+        textAlign: 'center',
+        color: '#fff'
       }}>
-        Project not found
+        <p>Project not found</p>
+        <Link 
+          href="/"
+          style={{
+            color: '#fff',
+            textDecoration: 'underline',
+            display: 'inline-block',
+            marginTop: '1rem'
+          }}
+        >
+          Return to Home
+        </Link>
       </main>
     );
   }
@@ -118,9 +157,29 @@ export default function ProjectDetails({
           gap: '0.5rem',
         }}
       >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+          <Link
+            href="/"
+            style={{
+              color: '#6B778C',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.9rem',
+              padding: '0.5rem',
+              borderRadius: '4px',
+              transition: 'background 0.2s',
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = '#F4F5F7' }}
+            onMouseOut={e => { e.currentTarget.style.background = 'transparent' }}
+          >
+            ← Back to Projects
+          </Link>
+        </div>
         <h1
           style={{
-            fontSize: '2.5rem',
+            fontSize: 'clamp(1.5rem, 5vw, 2.5rem)',
             fontWeight: 800,
             color: '#0079bf',
             letterSpacing: '-1px',
@@ -138,10 +197,19 @@ export default function ProjectDetails({
             alignItems: 'center',
             justifyContent: 'space-between',
             marginBottom: '2rem',
+            flexWrap: 'wrap',
+            gap: '1rem',
           }}
         >
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#222' }}>Tasks</h2>
-          <a
+          <h2 style={{ 
+            fontSize: 'clamp(1.2rem, 4vw, 1.5rem)', 
+            fontWeight: 700, 
+            color: '#222',
+            margin: 0,
+          }}>
+            Tasks
+          </h2>
+          <Link
             href={`/projects/${params.id}/tasks/new`}
             style={{
               display: 'inline-flex',
@@ -155,19 +223,27 @@ export default function ProjectDetails({
               fontSize: '1rem',
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
               textDecoration: 'none',
-              transition: 'background 0.2s',
+              transition: 'all 0.2s',
+            }}
+            onMouseOver={e => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.transform = 'none';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
             }}
           >
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
               <path stroke="currentColor" strokeWidth="2" d="M12 5v14m7-7H5"/>
             </svg>
             Add Task
-          </a>
+          </Link>
         </div>
         <div
           style={{
-            display: 'flex',
-            flexWrap: 'wrap',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
             gap: '1.5rem',
             alignItems: 'flex-start',
             minHeight: '120px',
@@ -176,7 +252,7 @@ export default function ProjectDetails({
           {project.tasks.length === 0 ? (
             <div
               style={{
-                flex: '1 1 100%',
+                gridColumn: '1 / -1',
                 color: '#a0aec0',
                 fontStyle: 'italic',
                 textAlign: 'center',
@@ -184,7 +260,6 @@ export default function ProjectDetails({
                 background: '#f7fafc',
                 borderRadius: '12px',
                 boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.04)',
-                minWidth: '300px',
               }}
             >
               No tasks yet.
@@ -199,12 +274,9 @@ export default function ProjectDetails({
                   borderRadius: '12px',
                   boxShadow: '0 2px 12px rgba(0,0,0,0.10)',
                   padding: '1.25rem 1.25rem 1rem 1.25rem',
-                  minWidth: '260px',
-                  maxWidth: '320px',
-                  flex: '1 1 260px',
-                  borderTop: task.done ? '5px solid #38b000' : '5px solid #0079bf',
+                  borderTop: task.isCompleted ? '5px solid #38b000' : '5px solid #0079bf',
                   position: 'relative',
-                  transition: 'box-shadow 0.2s, transform 0.2s',
+                  transition: 'all 0.2s ease',
                   cursor: 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
@@ -226,17 +298,18 @@ export default function ProjectDetails({
                       height: '16px',
                       borderRadius: '50%',
                       border: '2px solid',
-                      background: task.done ? '#38b000' : '#0079bf',
-                      borderColor: task.done ? '#38b000' : '#0079bf',
+                      background: task.isCompleted ? '#38b000' : '#0079bf',
+                      borderColor: task.isCompleted ? '#38b000' : '#0079bf',
                       display: 'inline-block',
+                      flexShrink: 0,
                     }}
                   ></span>
                   <span
                     style={{
                       fontSize: '1.15rem',
                       fontWeight: 600,
-                      color: task.done ? '#a0aec0' : '#22223b',
-                      textDecoration: task.done ? 'line-through' : 'none',
+                      color: task.isCompleted ? '#a0aec0' : '#22223b',
+                      textDecoration: task.isCompleted ? 'line-through' : 'none',
                       transition: 'color 0.2s',
                       wordBreak: 'break-word',
                     }}
@@ -244,7 +317,7 @@ export default function ProjectDetails({
                     {task.title}
                   </span>
                 </div>
-                {task.done && (
+                {task.isCompleted && (
                   <span
                     style={{
                       position: 'absolute',

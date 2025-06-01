@@ -12,9 +12,12 @@
   "dependencies": {
     "@prisma/client": "^6.8.2",
     "@tailwindcss/vite": "^4.1.8",
+    "@types/bcrypt": "^5.0.2",
+    "bcrypt": "^6.0.0",
     "lucide-react": "^0.511.0",
     "mongodb": "^6.16.0",
     "next": "^15.3.3",
+    "next-auth": "^4.24.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.4"

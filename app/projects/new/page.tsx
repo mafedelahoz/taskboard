@@ -3,6 +3,8 @@
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
+import { useEffect, useState } from 'react'
 
 type ProjectFormData = {
   name: string;
@@ -12,249 +14,163 @@ type ProjectFormData = {
 export default function NewProject() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ProjectFormData>()
   const router = useRouter()
+  const { status } = useSession()
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    }
+  }, [status, router])
 
   const onSubmit = async (data: ProjectFormData) => {
+    setError(null);
     try {
       const res = await fetch('/api/projects', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data)
       });
 
+      const responseData = await res.json();
+
       if (!res.ok) {
-        throw new Error('Failed to create project');
+        throw new Error(responseData.error || 'Failed to create project');
       }
 
       router.push('/');
+      router.refresh();
     } catch (error) {
       console.error('Error creating project:', error);
-      alert('Failed to create project. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to create project. Please try again.');
     }
   }
 
+  if (status === 'loading') {
+    return (
+      <div className="page-container">
+        <div className="loading-spinner">Loading...</div>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated') {
+    return null;
+  }
+
   return (
-    <>
-      <style>{`
-        .form-container {
-          max-width: 450px;
-          margin: 3rem auto;
-          background: #ffffff;
-          padding: 2rem 2.5rem;
-          border-radius: 12px;
-          box-shadow: 0 4px 24px rgba(0,0,0,0.1);
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+    <main className="page-container">
+      <div>
+        <Link href="/" className="back-button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Back to Projects
+        </Link>
 
-        .header {
-          display: flex;
-          align-items: center;
-          margin-bottom: 2rem;
-          position: relative;
-        }
+        <div className="form-container">
+          <div className="form-header">
+            <h1 className="form-title">Create New Project</h1>
+            <p className="form-subtitle">Start organizing your tasks with a new project board.</p>
+          </div>
 
-        .back-button {
-          position: absolute;
-          left: 0;
-          color: #42526E;
-          text-decoration: none;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 0.9rem;
-          padding: 4px 8px;
-          border-radius: 4px;
-          transition: background 0.2s;
-        }
+          <form onSubmit={handleSubmit(onSubmit)} className="form-content">
+            {error && (
+              <div className="error-message">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                {error}
+              </div>
+            )}
 
-        .back-button:hover {
-          background: #F4F5F7;
-        }
+            <div className="form-group">
+              <label htmlFor="name" className="form-label">
+                Project Name *
+              </label>
+              <input
+                id="name"
+                type="text"
+                {...register('name', { 
+                  required: 'Project name is required',
+                  maxLength: {
+                    value: 50,
+                    message: 'Project name cannot exceed 50 characters'
+                  }
+                })}
+                className="form-input"
+                placeholder=""
+              />
+              {errors.name && (
+                <div className="error-message">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  {errors.name.message}
+                </div>
+              )}
+            </div>
 
-        h1 {
-          flex: 1;
-          font-size: 1.75rem;
-          font-weight: 700;
-          color: #172b4d;
-          text-align: center;
-          margin: 0;
-        }
+            <div className="form-group">
+              <label htmlFor="description" className="form-label">
+                Description
+              </label>
+              <textarea
+                id="description"
+                {...register('description', {
+                  maxLength: {
+                    value: 200,
+                    message: 'Description cannot exceed 200 characters'
+                  }
+                })}
+                className="form-textarea"
+                placeholder="Add some details about your project..."
+              />
+              {errors.description && (
+                <div className="error-message">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  {errors.description.message}
+                </div>
+              )}
+            </div>
 
-        .form-group {
-          margin-bottom: 1.5rem;
-        }
-
-        label {
-          display: block;
-          margin-bottom: 0.5rem;
-          font-weight: 600;
-          color: #172b4d;
-          font-size: 0.95rem;
-        }
-
-        input[type="text"],
-        textarea {
-          width: 100%;
-          padding: 0.75rem;
-          font-size: 1rem;
-          border: 2px solid #dfe1e6;
-          border-radius: 6px;
-          transition: all 0.2s ease;
-          box-sizing: border-box;
-          font-family: inherit;
-          resize: vertical;
-          background: #FAFBFC;
-        }
-
-        input[type="text"]:hover,
-        textarea:hover {
-          background: #FFFFFF;
-          border-color: #C1C7D0;
-        }
-
-        input[type="text"]:focus,
-        textarea:focus {
-          outline: none;
-          border-color: #4C9AFF;
-          background: #FFFFFF;
-          box-shadow: 0 0 0 2px rgba(76, 154, 255, 0.2);
-        }
-
-        .error-message {
-          color: #DE350B;
-          font-size: 0.85rem;
-          margin-top: 0.5rem;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        button {
-          margin-top: 2rem;
-          background: linear-gradient(to bottom, #0052CC, #0747A6);
-          border: none;
-          color: white;
-          padding: 0.85rem 1.5rem;
-          font-size: 1rem;
-          font-weight: 600;
-          border-radius: 6px;
-          cursor: pointer;
-          width: 100%;
-          transition: all 0.2s ease;
-          position: relative;
-          overflow: hidden;
-        }
-
-        button:not(:disabled):hover {
-          background: linear-gradient(to bottom, #0747A6, #043594);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        button:not(:disabled):active {
-          transform: translateY(0);
-          box-shadow: none;
-        }
-
-        button:disabled {
-          background: #091E420F;
-          cursor: not-allowed;
-          color: #A5ADBA;
-        }
-
-        .loading-spinner {
-          display: inline-block;
-          width: 16px;
-          height: 16px;
-          border: 2px solid #ffffff;
-          border-radius: 50%;
-          border-top-color: transparent;
-          animation: spin 0.6s linear infinite;
-          margin-right: 8px;
-        }
-
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        .character-count {
-          font-size: 0.8rem;
-          color: #6B778C;
-          text-align: right;
-          margin-top: 0.25rem;
-        }
-      `}</style>
-
-      <main className="form-container" role="main">
-        <div className="header">
-          <Link href="/" className="back-button">
-            ← Back
-          </Link>
-          <h1>Create Project</h1>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="submit-button"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="loading-spinner" viewBox="0 0 24 24" width="20" height="20">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Creating Project...
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Create Project
+                </>
+              )}
+            </button>
+          </form>
         </div>
-        
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div className="form-group">
-            <label htmlFor="name">Project Name *</label>
-            <input
-              id="name"
-              type="text"
-              placeholder=""
-              {...register('name', { 
-                required: 'Project name is required',
-                maxLength: {
-                  value: 50,
-                  message: 'Project name cannot exceed 50 characters'
-                }
-              })}
-              aria-invalid={errors.name ? "true" : "false"}
-              disabled={isSubmitting}
-            />
-            {errors.name && (
-              <p role="alert" className="error-message">
-                ⚠️ {errors.name.message}
-              </p>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="description">Description</label>
-            <textarea
-              id="description"
-              placeholder="Describe your project (optional)"
-              rows={4}
-              {...register('description', {
-                maxLength: {
-                  value: 200,
-                  message: 'Description cannot exceed 200 characters'
-                }
-              })}
-              disabled={isSubmitting}
-            />
-            {errors.description && (
-              <p role="alert" className="error-message">
-                ⚠️ {errors.description.message}
-              </p>
-            )}
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={isSubmitting}
-            aria-label={isSubmitting ? "Creating Project..." : "Create Project"}
-          >
-            {isSubmitting ? (
-              <>
-                <span className="loading-spinner"></span>
-                Creating...
-              </>
-            ) : (
-              'Create Project'
-            )}
-          </button>
-        </form>
-      </main>
-    </>
-  )
+      </div>
+    </main>
+  );
 }

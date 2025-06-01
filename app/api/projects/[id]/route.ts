@@ -32,12 +32,10 @@ export async function POST(
     const { id: projectId } = await params;
     const body = await req.json();
 
-    // Validate title field
     if (!body.title || typeof body.title !== 'string' || body.title.trim() === '') {
       return new NextResponse('Task title is required', { status: 400 });
     }
 
-    // Create task with only title and project reference
     const newTask = await prisma.task.create({
       data: {
         title: body.title.trim(),

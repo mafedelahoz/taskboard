@@ -1,20 +1,26 @@
-import './globals.css'; 
-import '../input.css'
+import './globals.css'
+import { Inter } from 'next/font/google'
+import { NextAuthProvider } from './providers'
+
+const inter = Inter({ subsets: ['latin'] })
+
 export const metadata = {
   title: 'TaskBoard',
-  description: 'Minimal project management tool',
-};
+  description: 'A simple task management application',
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="en">
-      <body>
-        {children}
+      <body className={inter.className}>
+        <NextAuthProvider>
+          {children}
+        </NextAuthProvider>
       </body>
     </html>
-  );
+  )
 }

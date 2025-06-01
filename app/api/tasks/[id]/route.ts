@@ -6,9 +6,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    
-    // Get the current task
+    const { id } = await params;    
     const task = await prisma.task.findUnique({
       where: { id },
     });
@@ -17,11 +15,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    // Toggle the done status
     const updatedTask = await prisma.task.update({
       where: { id },
       data: {
-        done: !task.done,
+        isCompleted: !task.isCompleted,
       },
     });
 
