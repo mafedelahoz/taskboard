@@ -20,11 +20,14 @@ interface Project {
   tasks: Task[];
 }
 
-export default function ProjectDetails({ 
-  params 
-}: { 
-  params: { id: string }
-}) {
+interface PageProps {
+  params: {
+    id: string;
+  };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+export default function ProjectDetails({ params }: PageProps) {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const { status } = useSession();
